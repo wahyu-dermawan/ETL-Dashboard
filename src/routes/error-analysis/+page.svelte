@@ -119,14 +119,23 @@
 
     <div class="error-clusters">
       <h2>Error Clusters</h2>
-      <ul>
+      <ul role="listbox" aria-label="Error types">
         {#each Object.entries(currentErrorAnalysisData) as [errorType, count]}
-          <li 
-            class:selected={selectedErrorType === errorType}
-            on:click={() => selectErrorType(errorType)}
-          >
-            <span class="error-type">{errorType}</span>
-            <span class="error-count">{count}</span>
+          <li>
+            <button
+              role="option"
+              aria-selected={selectedErrorType === errorType}
+              on:click={() => selectErrorType(errorType)}
+              on:keydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  selectErrorType(errorType);
+                }
+              }}
+            >
+              <span class="error-type">{errorType}</span>
+              <span class="error-count">{count}</span>
+            </button>
           </li>
         {/each}
       </ul>
@@ -243,9 +252,40 @@
     background-color: #e9e9e9;
   }
 
-  .error-clusters li.selected {
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  li {
+    margin-bottom: 0.5rem;
+  }
+
+  button {
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  button[aria-selected="true"] {
     background-color: #e3f2fd;
     font-weight: bold;
+  }
+
+  button:hover, button:focus {
+    background-color: #e9e9e9;
+  }
+
+  .error-type {
+    flex-grow: 1;
+  }
+
+  .error-count {
+    margin-left: 1rem;
   }
 
   table {
