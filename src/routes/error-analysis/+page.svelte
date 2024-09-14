@@ -93,26 +93,28 @@
       {#if selectedErrorType}
         <div class="job-details">
           <h2>Jobs with {selectedErrorType} Error</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Job ID</th>
-                <th>Job Name</th>
-                <th>Start Time</th>
-                <th>Duration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each currentErrorClusteredJobs[selectedErrorType] as job}
+          <div class="table-container">
+            <table>
+              <thead>
                 <tr>
-                  <td>{job.id}</td>
-                  <td>{job.name}</td>
-                  <td>{job.startTime}</td>
-                  <td>{job.duration}</td>
+                  <th>Job ID</th>
+                  <th>Job Name</th>
+                  <th>Start Time</th>
+                  <th>Duration</th>
                 </tr>
-              {/each}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {#each currentErrorClusteredJobs[selectedErrorType] as job}
+                  <tr>
+                    <td data-label="Job ID">{job.id}</td>
+                    <td data-label="Job Name">{job.name}</td>
+                    <td data-label="Start Time">{job.startTime}</td>
+                    <td data-label="Duration">{job.duration}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
         </div>
       {/if}
     </div>
@@ -156,10 +158,12 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
   }
 
   h1, h2 {
     color: #333;
+    margin: 0.5em 0;
   }
 
   .back-button {
@@ -178,16 +182,19 @@
 
   .time-filter {
     margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .time-filter button {
-    margin-right: 10px;
     padding: 8px 12px;
     background-color: #f0f0f0;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    flex-grow: 1;
   }
 
   .time-filter button.active {
@@ -197,11 +204,12 @@
 
   .content-wrapper {
     display: flex;
+    flex-wrap: wrap;
     gap: 20px;
   }
 
   .main-content {
-    flex: 3;
+    flex: 1 1 600px;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -223,7 +231,7 @@
   }
 
   .error-clusters {
-    flex: 1;
+    flex: 1 1 300px;
     background-color: #f9f9f9;
     padding: 20px;
     border-radius: 4px;
@@ -236,47 +244,28 @@
   }
 
   .error-clusters li {
+    margin-bottom: 0.5rem;
+  }
+
+  .error-clusters button {
     display: flex;
+    width: 100%;
     justify-content: space-between;
+    align-items: center;
     padding: 10px;
-    border-bottom: 1px solid #ddd;
+    background: none;
+    border: none;
+    text-align: left;
     cursor: pointer;
     transition: background-color 0.3s ease;
   }
 
-  .error-clusters li:last-child {
-    border-bottom: none;
-  }
-
-  .error-clusters li:hover {
-    background-color: #e9e9e9;
-  }
-
-  ul {
-    list-style-type: none;
-    padding: 0;
-  }
-
-  li {
-    margin-bottom: 0.5rem;
-  }
-
-  button {
-    text-align: left;
-    background: none;
-    border: none;
-    padding: 0.5rem;
-    cursor: pointer;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  button[aria-selected="true"] {
+  .error-clusters button[aria-selected="true"] {
     background-color: #e3f2fd;
     font-weight: bold;
   }
 
-  button:hover, button:focus {
+  .error-clusters button:hover, .error-clusters button:focus {
     background-color: #e9e9e9;
   }
 
@@ -286,6 +275,10 @@
 
   .error-count {
     margin-left: 1rem;
+  }
+
+  .table-container {
+    overflow-x: auto;
   }
 
   table {
@@ -306,5 +299,47 @@
 
   tr:last-child td {
     border-bottom: none;
+  }
+
+  @media (max-width: 600px) {
+    .time-filter {
+      flex-direction: column;
+    }
+
+    .time-filter button {
+      width: 100%;
+    }
+
+    table {
+      border: 0;
+    }
+
+    table thead {
+      display: none;
+    }
+
+    table tr {
+      margin-bottom: 10px;
+      display: block;
+      border-bottom: 2px solid #ddd;
+    }
+
+    table td {
+      display: block;
+      text-align: right;
+      padding-left: 50%;
+      position: relative;
+    }
+
+    table td::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 6px;
+      width: 45%;
+      padding-right: 10px;
+      white-space: nowrap;
+      text-align: left;
+      font-weight: bold;
+    }
   }
 </style>

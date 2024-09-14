@@ -98,6 +98,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           scales: {
             y: {
               beginAtZero: true
@@ -179,75 +180,79 @@
   {:else}
     <div class="job-info">
       <h2>Job Information</h2>
-      <table>
-        <tr>
-          <th>Job ID:</th>
-          <td>{job.id}</td>
-        </tr>
-        <tr>
-          <th>Description:</th>
-          <td>{job.description}</td>
-        </tr>
-        <tr>
-          <th>Status:</th>
-          <td class={getStatusClass(job.status)}>{job.status}</td>
-        </tr>
-        <tr>
-          <th>Start Time:</th>
-          <td>{formatDate(job.startTime)}</td>
-        </tr>
-        <tr>
-          <th>End Time:</th>
-          <td>{formatDate(job.endTime)}</td>
-        </tr>
-        <tr>
-          <th>Duration:</th>
-          <td>{job.duration}</td>
-        </tr>
-        <tr>
-          <th>Records Processed:</th>
-          <td>{job.recordsProcessed.toLocaleString()}</td>
-        </tr>
-        <tr>
-          <th>Error Message:</th>
-          <td>{job.errorMessage}</td>
-        </tr>
-        <tr>
-          <th>Source System:</th>
-          <td>{job.sourceSystem}</td>
-        </tr>
-        <tr>
-          <th>Target System:</th>
-          <td>{job.targetSystem}</td>
-        </tr>
-      </table>
+      <div class="table-container">
+        <table>
+          <tr>
+            <th>Job ID:</th>
+            <td>{job.id}</td>
+          </tr>
+          <tr>
+            <th>Description:</th>
+            <td>{job.description}</td>
+          </tr>
+          <tr>
+            <th>Status:</th>
+            <td class={getStatusClass(job.status)}>{job.status}</td>
+          </tr>
+          <tr>
+            <th>Start Time:</th>
+            <td>{formatDate(job.startTime)}</td>
+          </tr>
+          <tr>
+            <th>End Time:</th>
+            <td>{formatDate(job.endTime)}</td>
+          </tr>
+          <tr>
+            <th>Duration:</th>
+            <td>{job.duration}</td>
+          </tr>
+          <tr>
+            <th>Records Processed:</th>
+            <td>{job.recordsProcessed.toLocaleString()}</td>
+          </tr>
+          <tr>
+            <th>Error Message:</th>
+            <td>{job.errorMessage}</td>
+          </tr>
+          <tr>
+            <th>Source System:</th>
+            <td>{job.sourceSystem}</td>
+          </tr>
+          <tr>
+            <th>Target System:</th>
+            <td>{job.targetSystem}</td>
+          </tr>
+        </table>
+      </div>
     </div>
 
     {#if job.steps && job.steps.length > 0}
       <div class="job-steps">
-        <h2>Job Steps</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Table Name</th>
-              <th>Status</th>
-              <th>Start Time</th>
-              <th>Duration</th>
-              <th>Records Processed</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each job.steps as step}
+        <h2>Job Load</h2>
+        <div class="table-container">
+          <table>
+            <thead>
               <tr>
-                <td>{step.name}</td>
-                <td class={getStatusClass(step.status)}>{step.status}</td>
-                <td>{step.startTime !== '-' ? formatDate(step.startTime) : '-'}</td>
-                <td>{step.duration}</td>
-                <td>{step.recordsProcessed.toLocaleString()}</td>
+                <th>Table Name</th>
+                <th>Status</th>
+                <th>Start Time</th>
+                <th>Duration</th>
+                <th>Records Processed</th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {#each job.steps as step}
+                <tr>
+                  <td data-label="Table Name">{step.name}</td>
+                  <td data-label="Status" class={getStatusClass(step.status)}>{step.status}</td>
+                  <td data-label="Start Time">{step.startTime !== '-' ? formatDate(step.startTime) : '-'}</td>
+                  <td data-label="Duration">{step.duration}</td>
+                  <td data-label="Records Processed">{step.recordsProcessed.toLocaleString()}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
       </div>
     {/if}
 
@@ -259,32 +264,36 @@
         <button class:active={timeRange === 'last24h'} on:click={() => handleTimeRangeChange('last24h')}>Last 24 Hours</button>
         <button class:active={timeRange === 'last7d'} on:click={() => handleTimeRangeChange('last7d')}>Last 7 Days</button>
       </div>
-      <canvas id="errorAnalysisChart"></canvas>
+      <div class="chart-container">
+        <canvas id="errorAnalysisChart"></canvas>
+      </div>
     </div> -->
 
     <div class="job-logs">
       <h2>Job Logs</h2>
       {#if filteredLogs.length > 0}
-        <table>
-          <thead>
-            <tr>
-              <th>Timestamp</th>
-              <th>Level</th>
-              <th>Component</th>
-              <th>Message</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each filteredLogs as log}
+        <div class="table-container">
+          <table>
+            <thead>
               <tr>
-                <td>{formatDate(log.timestamp)}</td>
-                <td class={getLogLevelClass(log.level)}>{log.level}</td>
-                <td>{log.component}</td>
-                <td>{log.message}</td>
+                <th>Timestamp</th>
+                <th>Level</th>
+                <th>Component</th>
+                <th>Message</th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {#each filteredLogs as log}
+                <tr>
+                  <td data-label="Timestamp">{formatDate(log.timestamp)}</td>
+                  <td data-label="Level" class={getLogLevelClass(log.level)}>{log.level}</td>
+                  <td data-label="Component">{log.component}</td>
+                  <td data-label="Message">{log.message}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
       {:else}
         <p>No logs available for the selected time range.</p>
       {/if}
@@ -305,6 +314,13 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.5em;
   }
 
   .back-button {
@@ -319,6 +335,11 @@
 
   h2 {
     margin-top: 30px;
+    font-size: 1.2em;
+  }
+
+  .table-container {
+    overflow-x: auto;
   }
 
   table {
@@ -347,19 +368,35 @@
 
   .error-analysis {
     margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    height: 500px; /* Adjust this value as needed */
   }
 
-  canvas {
-    max-height: 300px;
+  .chart-container {
+    flex-grow: 1;
+    position: relative;
     width: 100%;
+    height: 100%;
   }
+
+  /* canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+  } */
 
   .time-filter {
     margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
   }
 
-  .time-filter button {
-    margin-left: 10px;
+  /* .time-filter button {
     padding: 5px 10px;
     border: none;
     background-color: #ddd;
@@ -369,10 +406,62 @@
   .time-filter button.active {
     background-color: #4CAF50;
     color: white;
-  }
-
+  } */
   p {
     color: #666;
     font-style: italic;
+  }
+
+  @media (max-width: 768px) {
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .back-button {
+      margin-top: 10px;
+    }
+
+    .error-analysis {
+      height: 400px; /* Adjust for smaller screens */
+    }
+    table, thead, tbody, th, td, tr {
+      display: block;
+    }
+
+    thead tr {
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+    }
+
+    tr {
+      margin-bottom: 10px;
+    }
+
+    td {
+      border: none;
+      position: relative;
+      padding-left: 50%;
+    }
+
+    td:before {
+      content: attr(data-label);
+      position: absolute;
+      left: 6px;
+      width: 45%;
+      padding-right: 10px;
+      white-space: nowrap;
+      font-weight: bold;
+    }
+
+    .time-filter {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    /* .time-filter button {
+      width: 100%;
+    } */
   }
 </style>
