@@ -1,0 +1,5 @@
+name = "etl-job-monitoring"
+compatibility_date = "2023-09-04"
+
+[site]
+bucket = "./build"

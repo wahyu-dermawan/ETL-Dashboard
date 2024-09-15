@@ -131,7 +131,7 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
     <button class="mobile-menu-toggle" on:click={toggleMobileMenu}>
       ☰
     </button>
-    <div class="time-filter">
+    <div class="time-filter" class:show-mobile-menu={showMobileMenu}>
       <button class:active={timeRange === 'today'} on:click={() => handleTimeRangeChange('today')}>Today</button>
       <button class:active={timeRange === 'week'} on:click={() => handleTimeRangeChange('week')}>Last 7 Days</button>
       <button class:active={timeRange === 'month'} on:click={() => handleTimeRangeChange('month')}>Last 30 Days</button>
@@ -347,6 +347,10 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
   @media (max-width: 768px) {
     .mobile-menu-toggle {
       display: block;
+      background: none;
+      border: none;
+      font-size: 1.5em;
+      cursor: pointer;
     }
 
     .time-filter {
