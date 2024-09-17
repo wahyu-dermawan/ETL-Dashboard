@@ -181,86 +181,82 @@ export const errorClusteredJobs = {
       ]
     };
   
-  export const jobDetails: { [key: string]: any } = {
-    'JOB001': {
-      id: 'JOB001',
-      name: 'Daily Sales ETL',
-      description: 'Extract, transform, and load daily sales data from multiple sources into the data warehouse.',
-      status: 'Completed',
-      startTime: sub(now, { hours: 2 }).toISOString(),
-      endTime: sub(now, { minutes: 30 }).toISOString(),
-      duration: '1h 30m',
-      recordsProcessed: 50000,
-      errorMessage: '-',
-      sourceSystem: 'POS Database, E-commerce Platform',
-      targetSystem: 'Data Warehouse',
-      steps: [
-        { name: 'Extract Sales Data', status: 'Completed', startTime: sub(now, { hours: 2 }).toISOString(), endTime: sub(now, { hours: 1, minutes: 40 }).toISOString(), duration: '20m', recordsProcessed: 50000 },
-        { name: 'Transform Data', status: 'Completed', startTime: sub(now, { hours: 1, minutes: 40 }).toISOString(), endTime: sub(now, { hours: 1 }).toISOString(), duration: '40m', recordsProcessed: 50000 },
-        { name: 'Load to Data Warehouse', status: 'Completed', startTime: sub(now, { hours: 1 }).toISOString(), endTime: sub(now, { minutes: 30 }).toISOString(), duration: '30m', recordsProcessed: 50000 }
-      ],
-      errorAnalysis: {
-        'Connection Timeout': 1,
-        'Data Validation Error': 2,
-        'Transformation Error': 1,
-        'Source Data Unavailable': 0,
-        'Insufficient Resources': 0,
-        'Others': 1
+    export const jobDetails: { [key: string]: any } = {
+      'JOB001': {
+        id: 'JOB001',
+        name: 'REG_D_OBJEK_PAJAK',
+        description: 'Process and update tax object registration data in the data warehouse.',
+        status: 'Completed',
+        startTime: sub(now, { hours: 2 }).toISOString(),
+        endTime: sub(now, { minutes: 30 }).toISOString(),
+        duration: '1h 30m',
+        recordsProcessed: 50000,
+        errorMessage: '-',
+        sourceSystem: 'Tax Registration System',
+        targetSystem: 'Data Warehouse',
+        steps: [
+          { name: 'Extract Tax Object Data', status: 'Completed', startTime: sub(now, { hours: 2 }).toISOString(), endTime: sub(now, { hours: 1, minutes: 40 }).toISOString(), duration: '20m', recordsProcessed: 50000 },
+          { name: 'Transform Data', status: 'Completed', startTime: sub(now, { hours: 1, minutes: 40 }).toISOString(), endTime: sub(now, { hours: 1 }).toISOString(), duration: '40m', recordsProcessed: 50000 },
+          { name: 'Load to Data Warehouse', status: 'Completed', startTime: sub(now, { hours: 1 }).toISOString(), endTime: sub(now, { minutes: 30 }).toISOString(), duration: '30m', recordsProcessed: 50000 }
+        ],
+        errorAnalysis: {
+          'Connection Timeout': 0,
+          'Data Validation Error': 0,
+          'Transformation Error': 0,
+          'Source Data Unavailable': 0,
+          'Insufficient Resources': 0,
+          'Others': 0
+        },
+        logs: [
+          { timestamp: sub(now, { hours: 2 }).toISOString(), level: 'INFO', component: 'JobController', message: 'Starting REG_D_OBJEK_PAJAK process' },
+          { timestamp: sub(now, { hours: 1, minutes: 59 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Connecting to Tax Registration System' },
+          { timestamp: sub(now, { hours: 1, minutes: 58 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Extracting tax object data' },
+          { timestamp: sub(now, { hours: 1, minutes: 40 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Extraction complete. 50,000 records processed' },
+          { timestamp: sub(now, { hours: 1, minutes: 39 }).toISOString(), level: 'INFO', component: 'DataTransformer', message: 'Starting data transformation' },
+          { timestamp: sub(now, { hours: 1 }).toISOString(), level: 'INFO', component: 'DataTransformer', message: 'Data transformation complete' },
+          { timestamp: sub(now, { minutes: 59 }).toISOString(), level: 'INFO', component: 'DataLoader', message: 'Initiating load to data warehouse' },
+          { timestamp: sub(now, { minutes: 31 }).toISOString(), level: 'INFO', component: 'DataLoader', message: 'Data load complete' },
+          { timestamp: sub(now, { minutes: 30 }).toISOString(), level: 'INFO', component: 'JobController', message: 'REG_D_OBJEK_PAJAK process completed successfully' }
+        ]
       },
-      logs: [
-        { timestamp: sub(now, { hours: 2 }).toISOString(), level: 'INFO', component: 'JobController', message: 'Starting daily ETL process' },
-        { timestamp: sub(now, { hours: 1, minutes: 59 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Connecting to source database' },
-        { timestamp: sub(now, { hours: 1, minutes: 58 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Extracting sales data' },
-        { timestamp: sub(now, { hours: 1, minutes: 40 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Extraction complete. 50,000 records processed' },
-        { timestamp: sub(now, { hours: 1, minutes: 39 }).toISOString(), level: 'INFO', component: 'DataTransformer', message: 'Starting data transformation' },
-        { timestamp: sub(now, { hours: 1, minutes: 30 }).toISOString(), level: 'WARNING', component: 'DataTransformer', message: 'Encountered 10 records with missing values' },
-        { timestamp: sub(now, { hours: 1 }).toISOString(), level: 'INFO', component: 'DataTransformer', message: 'Data transformation complete' },
-        { timestamp: sub(now, { minutes: 59 }).toISOString(), level: 'INFO', component: 'DataLoader', message: 'Initiating load to data warehouse' },
-        { timestamp: sub(now, { minutes: 45 }).toISOString(), level: 'ERROR', component: 'DataLoader', message: 'Connection timeout to data warehouse' },
-        { timestamp: sub(now, { minutes: 44 }).toISOString(), level: 'INFO', component: 'DataLoader', message: 'Retrying connection...' },
-        { timestamp: sub(now, { minutes: 43 }).toISOString(), level: 'INFO', component: 'DataLoader', message: 'Connection established. Resuming data load' },
-        { timestamp: sub(now, { minutes: 31 }).toISOString(), level: 'INFO', component: 'DataLoader', message: 'Data load complete' },
-        { timestamp: sub(now, { minutes: 30 }).toISOString(), level: 'INFO', component: 'JobController', message: 'Daily ETL process completed successfully' }
-      ]
-    },
-    'JOB002': {
-      id: 'JOB002',
-      name: 'Customer Data Update',
-      description: 'Update customer information and synchronize across all systems.',
-      status: 'Failed',
-      startTime: sub(now, { hours: 1 }).toISOString(),
-      endTime: sub(now, { minutes: 45 }).toISOString(),
-      duration: '15m',
-      recordsProcessed: 5000,
-      errorMessage: 'Connection timeout',
-      sourceSystem: 'CRM System',
-      targetSystem: 'Customer Database',
-      steps: [
-        { name: 'Extract Updated Records', status: 'Completed', startTime: sub(now, { hours: 1 }).toISOString(), endTime: sub(now, { minutes: 55 }).toISOString(), duration: '5m', recordsProcessed: 5000 },
-        { name: 'Validate Data', status: 'Completed', startTime: sub(now, { minutes: 55 }).toISOString(), endTime: sub(now, { minutes: 50 }).toISOString(), duration: '5m', recordsProcessed: 5000 },
-        { name: 'Update Customer Database', status: 'Failed', startTime: sub(now, { minutes: 50 }).toISOString(), endTime: sub(now, { minutes: 45 }).toISOString(), duration: '5m', recordsProcessed: 0 }
-      ],
-      errorAnalysis: {
-        'Connection Timeout': 1,
-        'Data Validation Error': 0,
-        'Transformation Error': 0,
-        'Source Data Unavailable': 0,
-        'Insufficient Resources': 0,
-        'Others': 0
+      'JOB002': {
+        id: 'JOB002',
+        name: 'REG_D_REPRESENTATIF',
+        description: 'Update representative information in the tax registration system.',
+        status: 'Failed',
+        startTime: sub(now, { minutes: 30 }).toISOString(),
+        endTime: sub(now, { minutes: 15 }).toISOString(),
+        duration: '15m',
+        recordsProcessed: 5000,
+        errorMessage: 'Connection timeout',
+        sourceSystem: 'Representative Management System',
+        targetSystem: 'Tax Registration Database',
+        steps: [
+          { name: 'Extract Representative Data', status: 'Completed', startTime: sub(now, { minutes: 30 }).toISOString(), endTime: sub(now, { minutes: 25 }).toISOString(), duration: '5m', recordsProcessed: 5000 },
+          { name: 'Validate Data', status: 'Completed', startTime: sub(now, { minutes: 25 }).toISOString(), endTime: sub(now, { minutes: 20 }).toISOString(), duration: '5m', recordsProcessed: 5000 },
+          { name: 'Update Tax Registration Database', status: 'Failed', startTime: sub(now, { minutes: 20 }).toISOString(), endTime: sub(now, { minutes: 15 }).toISOString(), duration: '5m', recordsProcessed: 0 }
+        ],
+        errorAnalysis: {
+          'Connection Timeout': 1,
+          'Data Validation Error': 0,
+          'Transformation Error': 0,
+          'Source Data Unavailable': 0,
+          'Insufficient Resources': 0,
+          'Others': 0
+        },
+        logs: [
+          { timestamp: sub(now, { minutes: 30 }).toISOString(), level: 'INFO', component: 'JobController', message: 'Starting REG_D_REPRESENTATIF job' },
+          { timestamp: sub(now, { minutes: 29 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Connecting to Representative Management System' },
+          { timestamp: sub(now, { minutes: 25 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Extraction complete. 5,000 records processed' },
+          { timestamp: sub(now, { minutes: 24 }).toISOString(), level: 'INFO', component: 'DataValidator', message: 'Starting data validation' },
+          { timestamp: sub(now, { minutes: 20 }).toISOString(), level: 'INFO', component: 'DataValidator', message: 'Data validation complete. No issues found.' },
+          { timestamp: sub(now, { minutes: 19 }).toISOString(), level: 'INFO', component: 'DataUpdater', message: 'Initiating update to Tax Registration Database' },
+          { timestamp: sub(now, { minutes: 16 }).toISOString(), level: 'ERROR', component: 'DataUpdater', message: 'Connection timeout to Tax Registration Database' },
+          { timestamp: sub(now, { minutes: 15 }).toISOString(), level: 'ERROR', component: 'JobController', message: 'Job failed due to connection timeout' }
+        ]
       },
-      logs: [
-        { timestamp: sub(now, { hours: 1 }).toISOString(), level: 'INFO', component: 'JobController', message: 'Starting Customer Data Update job' },
-        { timestamp: sub(now, { minutes: 59 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Connecting to CRM System' },
-        { timestamp: sub(now, { minutes: 55 }).toISOString(), level: 'INFO', component: 'DataExtractor', message: 'Extraction complete. 5,000 records processed' },
-        { timestamp: sub(now, { minutes: 54 }).toISOString(), level: 'INFO', component: 'DataValidator', message: 'Starting data validation' },
-        { timestamp: sub(now, { minutes: 50 }).toISOString(), level: 'INFO', component: 'DataValidator', message: 'Data validation complete. No issues found.' },
-        { timestamp: sub(now, { minutes: 49 }).toISOString(), level: 'INFO', component: 'DataUpdater', message: 'Initiating update to Customer Database' },
-        { timestamp: sub(now, { minutes: 46 }).toISOString(), level: 'ERROR', component: 'DataUpdater', message: 'Connection timeout to Customer Database' },
-        { timestamp: sub(now, { minutes: 45 }).toISOString(), level: 'ERROR', component: 'JobController', message: 'Job failed due to connection timeout' }
-      ]
-    },
-    // Add more job details as needed...
-  };
+      // Add more job details as needed...
+    };
 
 
 

@@ -7,41 +7,37 @@
 
   type TimeRange = 'today' | 'week' | 'month';
 
-interface Job {
-  id: string;
-  name: string;
-  status: string;
-  startTime: string;
-  duration: string;
-  recordsProcessed: number;
-  errorMessage: string;
-}
+  interface Job {
+    id: string;
+    name: string;
+    status: string;
+    startTime: string;
+    duration: string;
+    recordsProcessed: number;
+    errorMessage: string;
+  }
 
-interface RecentJobs {
-  today: Job[];
-  week: Job[];
-  month: Job[];
-}
+  interface RecentJobs {
+    today: Job[];
+    week: Job[];
+    month: Job[];
+  }
 
-let timeRange: TimeRange = 'week';
-let jobStatusChart: Chart | null = null;
+  let timeRange: TimeRange = 'week';
+  let jobStatusChart: Chart | null = null;
 
-$: currentJobData = jobData[timeRange];
-$: currentJobStatusData = jobStatusData[timeRange];
-$: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
-
-
+  $: currentJobData = jobData[timeRange];
+  $: currentJobStatusData = jobStatusData[timeRange];
+  $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
 
   let showMobileMenu = false;
   let activeTab: 'chart' | 'table' = 'chart';
-
-
 
   $: if (jobStatusChart) {
     updateCharts();
   }
 
-  function handleTimeRangeChange(range: 'today' | 'week' | 'month'): void {
+  function handleTimeRangeChange(range: TimeRange): void {
     timeRange = range;
     updateCharts();
     showMobileMenu = false;
@@ -88,14 +84,14 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
     }
   });
 
-  function getTimeRangeText(range: 'today' | 'week' | 'month'): string {
+  function getTimeRangeText(range: TimeRange): string {
     switch (range) {
       case 'today':
         return 'Today';
       case 'week':
-        return 'Last Week';
+        return 'Last 7 Days';
       case 'month':
-        return 'This Month';
+        return 'Last 30 Days';
       default:
         return '';
     }
@@ -109,15 +105,14 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
     activeTab = tab;
   }
 
-  function calculateErrorRate(jobData) {
+  function calculateErrorRate(jobData: { activeJobs: number; completedJobs: number; failedJobs: number; pendingJobs: number; }) {
     const totalJobs = jobData.completedJobs + jobData.failedJobs;
     return totalJobs > 0 ? ((jobData.failedJobs / totalJobs) * 100).toFixed(1) : '0.0';
   }
 
-  function navigateToErrorAnalysis(){
-    goto('/error-analysis')
+  function navigateToErrorAnalysis() {
+    goto('/error-analysis');
   }
-
 </script>
 
 <svelte:head>
@@ -156,7 +151,6 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
           <span class="value">{calculateErrorRate(currentJobData)}%</span>
         </div>
       </div>
-      <!-- <span class="view-analysis">View Error Analysis</span> -->
     </button>
     <div class="card pending">
       <h2>Pending {getTimeRangeText(timeRange)}</h2>
@@ -229,28 +223,24 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
     display: none;
   }
 
-  .back-button:hover {
-    background-color: #1976D2;
-  }
-
   .time-filter {
-  margin-bottom: 20px;
+    margin-bottom: 20px;
   }
 
-.time-filter button {
-  margin-right: 10px;
-  padding: 8px 12px;
-  background-color: #f0f0f0;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
+  .time-filter button {
+    margin-right: 10px;
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
 
-.time-filter button.active {
-  background-color: #4CAF50;
-  color: white;
-}
+  .time-filter button.active {
+    background-color: #4CAF50;
+    color: white;
+  }
 
   .status-cards {
     display: flex;
@@ -261,7 +251,7 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
 
   .card {
     width: 23%;
-    padding: 3px;
+    padding: 15px;
     border-radius: 5px;
     color: white;
     text-align: center;
@@ -279,17 +269,28 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
 
   .dashboard-container {
     display: flex;
-    gap: 20px;
     background-color: white;
     border: 1px solid #ddd;
     border-radius: 5px;
     padding: 20px;
-    position: relative;
+    height: 400px;
+    overflow: hidden;
+    position: relative; /* Added for absolute positioning of divider */
   }
 
-  .chart-section, .recent-jobs-section {
-    flex: 1;
-    min-width: 0;
+  .chart-section {
+    flex: 0 0 30%;
+    padding-right: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .recent-jobs-section {
+    flex: 0 0 65%;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    width: 65%; /* Explicitly set width to match flex basis */
   }
 
   .section-divider {
@@ -298,19 +299,24 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
     position: absolute;
     top: 20px;
     bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 32%; /* Align with the division between sections */
+  }
+
+  .chart-wrapper, .table-wrapper {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
   }
 
   .chart-wrapper {
-    height: 300px;
-    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .table-wrapper {
-    overflow-x: auto;
-    max-height: 300px;
     overflow-y: auto;
+    width: 100%; /* Ensure table wrapper takes full width of its container */
   }
 
   table {
@@ -344,121 +350,146 @@ $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
     text-decoration: underline;
   }
 
+  .card.failed {
+    background-color: #F44336;
+    color: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card.failed:hover {
+    background-color: #D32F2F;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .card.failed h2 {
+    margin-bottom: 10px;
+    font-size: 1.2em;
+  }
+
+  .card.failed .job-count {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin: 10px 0;
+  }
+
+  .card.failed .error-rate {
+    font-size: 0.9em;
+    margin-top: 5px;
+  }
+
+  .card.failed .error-rate .label {
+    font-weight: bold;
+  }
+
+  .card.failed::after {
+    content: '→';
+    position: absolute;
+    bottom: 10px;
+    right: -20px;
+    font-size: 1.5em;
+    transition: right 0.3s ease;
+  }
+
+  .card.failed:hover::after {
+    right: 10px;
+  }
+
   @media (max-width: 768px) {
-    .mobile-menu-toggle {
-      display: block;
-      background: none;
-      border: none;
+    main {
+      padding: 10px;
+    }
+
+    header {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
       font-size: 1.5em;
-      cursor: pointer;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .mobile-menu-toggle {
+      display: none; /* Hide the mobile menu toggle */
     }
 
     .time-filter {
-      display: none;
+      display: flex;
       width: 100%;
       margin-top: 10px;
-    }
-
-    .time-filter.show-mobile-menu {
-      display: flex;
-      flex-direction: column;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     .time-filter button {
-      margin: 5px 0;
+      margin: 5px;
+      flex: 1 0 calc(33.33% - 10px);
+      padding: 10px 5px;
+      font-size: 0.9em;
+    }
+
+    .status-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
 
     .card {
-      width: 48%;
+      width: auto;
+      margin-bottom: 0;
+      padding: 15px 10px;
     }
 
-    .mobile-tabs {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 20px;
+    .card h2 {
+      font-size: 1em;
+      margin-bottom: 5px;
     }
 
-    .mobile-tabs button {
-      padding: 10px;
-      background-color: #ddd;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    .card p, .card .job-count {
+      font-size: 1.5em;
+      margin: 5px 0;
     }
 
-    .mobile-tabs button.active {
-      background-color: #4CAF50;
-      color: white;
+    .card .error-rate {
+      font-size: 0.8em;
     }
 
     .dashboard-container {
       flex-direction: column;
+      height: auto;
+      padding: 10px;
     }
 
     .chart-section, .recent-jobs-section {
-      display: none;
-    }
-
-    .chart-section.active, .recent-jobs-section.active {
-      display: block;
+      width: 100%;
+      padding: 0;
+      margin-bottom: 20px;
     }
 
     .section-divider {
-      width: auto;
-      height: 1px;
-      left: 20px;
-      right: 20px;
-      top: 50%;
-      transform: translateY(-50%);
+      display: none;
+    }
+
+    .chart-wrapper, .table-wrapper {
+      height: auto;
+      max-height: 300px;
+    }
+
+    .table-wrapper{
+      overflow-x: auto;
+    }
+
+    table {
+      font-size: 0.9em;
+    }
+
+    th, td {
+      padding: 8px 5px;
     }
   }
-
-  .card.failed {
-  background-color: #F44336;
-  color: white;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.card.failed:hover {
-  background-color: #D32F2F;
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.card.failed h2 {
-  margin-bottom: 10px;
-  font-size: 1.2em;
-}
-
-.card.failed .job-count {
-  font-size: 2.5em;
-  font-weight: bold;
-  margin: 10px 0;
-}
-
-.card.failed .error-rate {
-  font-size: 0.9em;
-  margin-top: 5px;
-}
-
-.card.failed .error-rate .label {
-  font-weight: bold;
-}
-
-
-.card.failed::after {
-  content: '→';
-  position: absolute;
-  bottom: 10px;
-  right: -20px;
-  font-size: 1.5em;
-  transition: right 0.3s ease;
-}
-
-.card.failed:hover::after {
-  right: 10px;
-}
 </style>
