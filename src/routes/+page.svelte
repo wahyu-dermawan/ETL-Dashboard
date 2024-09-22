@@ -1,73 +1,101 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { Chart } from 'chart.js/auto';
-  import type { ChartConfiguration, ChartType } from 'chart.js';
-  import { jobData, jobStatusData, errorAnalysisData, recentJobs } from '$lib/dummyData';
+  import { onMount, afterUpdate } from 'svelte';
+  import { Chart, registerables } from 'chart.js';
+  import { jobData, jobStatusData, recentJobs } from '$lib/dummyData';
   import { goto } from '$app/navigation';
 
+  // Register Chart.js components
+  Chart.register(...registerables);
+
+  // Define types
   type TimeRange = 'today' | 'week' | 'month';
+  type Tier = 'tier2' | 'tier3';
 
-  interface Job {
-    id: string;
-    name: string;
-    status: string;
-    startTime: string;
-    duration: string;
-    recordsProcessed: number;
-    errorMessage: string;
-  }
-
-  interface RecentJobs {
-    today: Job[];
-    week: Job[];
-    month: Job[];
-  }
-
+  // Initialize state variables
   let timeRange: TimeRange = 'week';
+  let tier: Tier = 'tier2';
+  let selectedCluster: string | null = null;
   let jobStatusChart: Chart | null = null;
 
-  $: currentJobData = jobData[timeRange];
-  $: currentJobStatusData = jobStatusData[timeRange];
-  $: currentRecentJobs = (recentJobs as RecentJobs)[timeRange];
+  // Define clusters
+  const tier2Clusters = [
+    'Tax Return Processing (TRP)', 'Extensification', 'Taxpayer Service (TPS)',
+    'Audit', 'Criminal Investigation', 'Objection and Appeal', 'Non-Objection',
+    'Registration', 'Payment', 'Compliance Risk Management (CRM)',
+    'Document Management System (DMS)', 'Third Party Data Processing (TPD)',
+    'Taxpayer Account Management (TAM)', 'Valuation', 'Exchange of Information (EoI)',
+    'Collection', 'Tax Supervisory', 'Operational Intelligence'
+  ];
 
-  let showMobileMenu = false;
-  let activeTab: 'chart' | 'table' = 'chart';
+  const tier3Clusters = [
+    'Functional Requirement-Detail Design', 'Exemination Worksheet'
+  ];
 
+  // Reactive declarations
+  $: clusters = tier === 'tier2' ? tier2Clusters : tier3Clusters;
+
+  // Calculate current job data based on filters
+  $: currentJobData = selectedCluster 
+    ? jobData[tier][timeRange][selectedCluster]
+    : Object.values(jobData[tier][timeRange]).reduce((acc, curr) => {
+        Object.keys(curr).forEach(key => {
+          acc[key] = (acc[key] || 0) + curr[key];
+        });
+        return acc;
+      }, {} as any);
+
+  // Calculate current job status data based on filters
+  $: currentJobStatusData = selectedCluster 
+    ? jobStatusData[tier][timeRange][selectedCluster]
+    : Object.values(jobStatusData[tier][timeRange]).reduce((acc, curr) => {
+        Object.keys(curr).forEach(key => {
+          acc[key] = (acc[key] || 0) + curr[key];
+        });
+        return acc;
+      }, {} as any);
+
+  // Get recent jobs based on current filters
+  $: currentRecentJobs = recentJobs[tier][timeRange];
+
+  // Reactive statement to update chart when data changes
   $: if (jobStatusChart) {
-    updateCharts();
+    updateChart(currentJobStatusData);
   }
 
-  function handleTimeRangeChange(range: TimeRange): void {
-    timeRange = range;
-    updateCharts();
-    showMobileMenu = false;
-  }
-
-  function createChart(ctx: CanvasRenderingContext2D | null, config: ChartConfiguration): Chart | null {
-    if (ctx) {
-      return new Chart(ctx, config);
-    }
-    return null;
-  }
-
-  function updateCharts() {
+  // Function to update the chart
+  function updateChart(data: Record<string, number>) {
     if (jobStatusChart) {
-      jobStatusChart.data.labels = Object.keys(currentJobStatusData);
-      jobStatusChart.data.datasets[0].data = Object.values(currentJobStatusData);
+      jobStatusChart.data.labels = Object.keys(data);
+      jobStatusChart.data.datasets[0].data = Object.values(data);
       jobStatusChart.update();
     }
   }
 
+  // Event handlers for filter changes
+  function handleTimeRangeChange(range: TimeRange): void {
+    timeRange = range;
+  }
+
+  function handleTierChange(newTier: Tier): void {
+    tier = newTier;
+    selectedCluster = null;
+  }
+
+  function handleClusterChange(cluster: string | null): void {
+    selectedCluster = cluster === '' ? null : cluster;
+  }
+
+  // Initialize chart on component mount
   onMount(() => {
     const jobStatusCtx = document.getElementById('jobStatusChart') as HTMLCanvasElement | null;
     if (jobStatusCtx) {
-      const jobStatusConfig: ChartConfiguration<ChartType, number[], string> = {
+      jobStatusChart = new Chart(jobStatusCtx, {
         type: 'pie',
         data: {
           labels: Object.keys(currentJobStatusData),
           datasets: [{
             data: Object.values(currentJobStatusData),
-            backgroundColor: ['#4CAF50', '#F44336', '#FFC107']
+            backgroundColor: ['#9C27B0', '#2196F3', '#4CAF50', '#F44336', '#FF9800']
           }]
         },
         options: {
@@ -76,102 +104,120 @@
           plugins: {
             legend: {
               position: 'bottom'
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const label = context.label || '';
+                  const value = context.formattedValue;
+                  const total = context.dataset.data.reduce((acc: number, current: number) => acc + current, 0);
+                  const percentage = ((context.parsed as number / total) * 100).toFixed(1);
+                  return `${label}: ${value} (${percentage}%)`;
+                }
+              }
             }
           }
         }
-      };
-      jobStatusChart = createChart(jobStatusCtx.getContext('2d'), jobStatusConfig);
+      });
     }
   });
 
+  // Update chart after any reactive updates
+  afterUpdate(() => {
+    if (jobStatusChart) {
+      updateChart(currentJobStatusData);
+    }
+  });
+
+  // Helper functions
   function getTimeRangeText(range: TimeRange): string {
     switch (range) {
-      case 'today':
-        return 'Today';
-      case 'week':
-        return 'Last 7 Days';
-      case 'month':
-        return 'Last 30 Days';
-      default:
-        return '';
+      case 'today': return 'Today';
+      case 'week': return 'Last 7 Days';
+      case 'month': return 'Last 30 Days';
+      default: return '';
     }
   }
 
-  function toggleMobileMenu() {
-    showMobileMenu = !showMobileMenu;
-  }
-
-  function setActiveTab(tab: 'chart' | 'table') {
-    activeTab = tab;
-  }
-
-  function calculateErrorRate(jobData: { activeJobs: number; completedJobs: number; failedJobs: number; pendingJobs: number; }) {
+  function calculateErrorRate(jobData: { activeJobs: number; runningJobs: number; completedJobs: number; failedJobs: number; notRunningJobs: number; }) {
     const totalJobs = jobData.completedJobs + jobData.failedJobs;
     return totalJobs > 0 ? ((jobData.failedJobs / totalJobs) * 100).toFixed(1) : '0.0';
   }
 
+  // Navigation functions
   function navigateToErrorAnalysis() {
     goto('/error-analysis');
+  }
+
+  function navigateToJobDetails(jobId: string) {
+    goto(`/job/${jobId}`);
   }
 </script>
 
 <svelte:head>
   <title>Data Warehouse Jobs Monitoring</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
 </svelte:head>
 
 <main>
   <header>
     <h1>Data Warehouse Jobs Monitoring</h1>
-    <button class="mobile-menu-toggle" on:click={toggleMobileMenu}>
-      ☰
-    </button>
-    <div class="time-filter" class:show-mobile-menu={showMobileMenu}>
+  </header>
+
+  <div class="filters">
+    <div class="tier-filter">
+      <button class:active={tier === 'tier2'} on:click={() => handleTierChange('tier2')}>Tier 2</button>
+      <button class:active={tier === 'tier3'} on:click={() => handleTierChange('tier3')}>Tier 3</button>
+    </div>
+    <div class="cluster-filter">
+      <select on:change={(e) => handleClusterChange(e.target.value)}>
+        <option value="">All Clusters</option>
+        {#each clusters as cluster}
+          <option value={cluster}>{cluster}</option>
+        {/each}
+      </select>
+    </div>
+    <div class="time-filter">
       <button class:active={timeRange === 'today'} on:click={() => handleTimeRangeChange('today')}>Today</button>
       <button class:active={timeRange === 'week'} on:click={() => handleTimeRangeChange('week')}>Last 7 Days</button>
       <button class:active={timeRange === 'month'} on:click={() => handleTimeRangeChange('month')}>Last 30 Days</button>
     </div>
-  </header>
+  </div>
 
   <div class="status-cards">
     <div class="card active">
       <h2>Active Jobs</h2>
       <p>{currentJobData.activeJobs}</p>
     </div>
+    <div class="card running">
+      <h2>Running Jobs</h2>
+      <p>{currentJobData.runningJobs}</p>
+    </div>
     <div class="card completed">
       <h2>Completed {getTimeRangeText(timeRange)}</h2>
       <p>{currentJobData.completedJobs}</p>
     </div>
-    <button class="card failed" on:click={navigateToErrorAnalysis} type="button">
-      <div class="card-content">
-        <h2>Failed {getTimeRangeText(timeRange)}</h2>
-        <p class="job-count">{currentJobData.failedJobs}</p>
-        <div class="error-rate">
-          <span class="label">Error Rate:</span>
-          <span class="value">{calculateErrorRate(currentJobData)}%</span>
-        </div>
+    <button class="card failed" on:click={navigateToErrorAnalysis}>
+      <h2>Failed {getTimeRangeText(timeRange)}</h2>
+      <p class="job-count">{currentJobData.failedJobs}</p>
+      <div class="error-rate">
+        <span>Error Rate:</span>
+        <span>{calculateErrorRate(currentJobData)}%</span>
       </div>
     </button>
-    <div class="card pending">
-      <h2>Pending {getTimeRangeText(timeRange)}</h2>
-      <p>{currentJobData.pendingJobs}</p>
+    <div class="card not-running">
+      <h2>Not Run</h2>
+      <p>{currentJobData.notRunningJobs}</p>
     </div>
   </div>
 
-  <div class="mobile-tabs">
-    <button class:active={activeTab === 'chart'} on:click={() => setActiveTab('chart')}>Chart</button>
-    <button class:active={activeTab === 'table'} on:click={() => setActiveTab('table')}>Recent Jobs</button>
-  </div>
-
   <div class="dashboard-container">
-    <div class="chart-section" class:active={activeTab === 'chart'}>
+    <div class="chart-section">
       <h2>Job Status Overview</h2>
       <div class="chart-wrapper">
         <canvas id="jobStatusChart"></canvas>
       </div>
     </div>
-    <div class="section-divider"></div>
-    <div class="recent-jobs-section" class:active={activeTab === 'table'}>
+    <div class="recent-jobs-section">
       <h2>Recent Jobs</h2>
       <div class="table-wrapper">
         <table>
@@ -182,6 +228,7 @@
               <th>Status</th>
               <th>Start Time</th>
               <th>Duration</th>
+              <th>PIC</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -191,9 +238,10 @@
                 <td>{job.id}</td>
                 <td>{job.name}</td>
                 <td class={job.status.toLowerCase()}>{job.status}</td>
-                <td>{job.startTime}</td>
+                <td>{new Date(job.startTime).toLocaleString()}</td>
                 <td>{job.duration}</td>
-                <td><a href="/job/{job.id}">View</a></td>
+                <td>{job.pic}</td>
+                <td><button on:click={() => navigateToJobDetails(job.id)}>View</button></td>
               </tr>
             {/each}
           </tbody>
@@ -212,29 +260,53 @@
   }
 
   header {
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    color: #333;
+    text-align: center;
+  }
+
+  .filters {
     display: flex;
     justify-content: space-between;
-    align-items: center;
     margin-bottom: 20px;
     flex-wrap: wrap;
   }
 
-  .mobile-menu-toggle {
-    display: none;
+  .tier-filter, .time-filter {
+    display: flex;
+    gap: 10px;
   }
 
-  .time-filter {
-    margin-bottom: 20px;
+  .cluster-filter {
+    flex-grow: 1;
+    margin: 0 10px;
+  }
+
+  .tier-filter button, .time-filter button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+  }
+
+  .tier-filter button {
+    background-color: #e0e0e0;
+    color: #333;
+  }
+
+  .tier-filter button.active {
+    background-color: #2196F3;
+    color: white;
   }
 
   .time-filter button {
-    margin-right: 10px;
-    padding: 8px 12px;
     background-color: #f0f0f0;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+    color: #333;
   }
 
   .time-filter button.active {
@@ -242,81 +314,71 @@
     color: white;
   }
 
+  .cluster-filter select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    background-color: white;
+    font-size: 14px;
+  }
+
   .status-cards {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
     margin-bottom: 20px;
-    flex-wrap: wrap;
   }
 
   .card {
-    width: 23%;
-    padding: 15px;
-    border-radius: 5px;
+    padding: 20px;
+    border-radius: 10px;
     color: white;
     text-align: center;
-    margin-bottom: 10px;
+    transition: all 0.3s ease;
+    cursor: pointer;
   }
 
-  .card.active { background-color: #2196F3; }
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+
+  .card.active { background-color: #9C27B0; }
+  .card.running { background-color: #2196F3; }
   .card.completed { background-color: #4CAF50; }
   .card.failed { background-color: #F44336; }
-  .card.pending { background-color: #FFC107; }
+  .card.not-running { background-color: #FF9800; }
 
-  .mobile-tabs {
-    display: none;
+  .card h2 {
+    margin: 0;
+    font-size: 1.2em;
+  }
+
+  .card p {
+    font-size: 2em;
+    margin: 10px 0 0;
   }
 
   .dashboard-container {
     display: flex;
     background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 20px;
-    height: 400px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     overflow: hidden;
-    position: relative; /* Added for absolute positioning of divider */
   }
 
-  .chart-section {
-    flex: 0 0 30%;
-    padding-right: 20px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .recent-jobs-section {
-    flex: 0 0 65%;
-    padding-left: 20px;
-    display: flex;
-    flex-direction: column;
-    width: 65%; /* Explicitly set width to match flex basis */
-  }
-
-  .section-divider {
-    width: 1px;
-    background-color: #ddd;
-    position: absolute;
-    top: 20px;
-    bottom: 20px;
-    left: 32%; /* Align with the division between sections */
-  }
-
-  .chart-wrapper, .table-wrapper {
+  .chart-section, .recent-jobs-section {
     flex: 1;
-    overflow: hidden;
-    position: relative;
+    padding: 20px;
   }
 
   .chart-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    height: 300px;
   }
 
   .table-wrapper {
-    overflow-y: auto;
-    width: 100%; /* Ensure table wrapper takes full width of its container */
+    overflow-x: auto;
   }
 
   table {
@@ -326,170 +388,40 @@
 
   th, td {
     text-align: left;
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
+    padding: 12px;
+    border-bottom: 1px solid #e0e0e0;
   }
 
   th {
-    background-color: #f2f2f2;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+    background-color: #f5f5f5;
+    font-weight: bold;
   }
 
   td.completed { color: #4CAF50; }
   td.failed { color: #F44336; }
-  td.in-progress { color: #2196F3; }
-
-  td a {
-    color: #2196F3;
-    text-decoration: none;
-  }
-
-  td a:hover {
-    text-decoration: underline;
-  }
-
-  .card.failed {
-    background-color: #F44336;
-    color: white;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .card.failed:hover {
-    background-color: #D32F2F;
-    transform: translateY(-3px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  .card.failed h2 {
-    margin-bottom: 10px;
-    font-size: 1.2em;
-  }
-
-  .card.failed .job-count {
-    font-size: 2.5em;
-    font-weight: bold;
-    margin: 10px 0;
-  }
-
-  .card.failed .error-rate {
-    font-size: 0.9em;
-    margin-top: 5px;
-  }
-
-  .card.failed .error-rate .label {
-    font-weight: bold;
-  }
-
-  .card.failed::after {
-    content: '→';
-    position: absolute;
-    bottom: 10px;
-    right: -20px;
-    font-size: 1.5em;
-    transition: right 0.3s ease;
-  }
-
-  .card.failed:hover::after {
-    right: 10px;
-  }
+  td.running { color: #2196F3; }
+  td.not-running { color: #FF9800; }
 
   @media (max-width: 768px) {
-    main {
-      padding: 10px;
-    }
-
-    header {
+    .filters {
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
     }
 
-    h1 {
-      font-size: 1.5em;
+    .tier-filter, .time-filter, .cluster-filter {
       margin-bottom: 10px;
-      text-align: center;
-    }
-
-    .mobile-menu-toggle {
-      display: none; /* Hide the mobile menu toggle */
-    }
-
-    .time-filter {
-      display: flex;
-      width: 100%;
-      margin-top: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .time-filter button {
-      margin: 5px;
-      flex: 1 0 calc(33.33% - 10px);
-      padding: 10px 5px;
-      font-size: 0.9em;
     }
 
     .status-cards {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-    }
-
-    .card {
-      width: auto;
-      margin-bottom: 0;
-      padding: 15px 10px;
-    }
-
-    .card h2 {
-      font-size: 1em;
-      margin-bottom: 5px;
-    }
-
-    .card p, .card .job-count {
-      font-size: 1.5em;
-      margin: 5px 0;
-    }
-
-    .card .error-rate {
-      font-size: 0.8em;
+      grid-template-columns: 1fr;
     }
 
     .dashboard-container {
       flex-direction: column;
-      height: auto;
-      padding: 10px;
     }
 
     .chart-section, .recent-jobs-section {
       width: 100%;
-      padding: 0;
-      margin-bottom: 20px;
-    }
-
-    .section-divider {
-      display: none;
-    }
-
-    .chart-wrapper, .table-wrapper {
-      height: auto;
-      max-height: 300px;
-    }
-
-    .table-wrapper{
-      overflow-x: auto;
-    }
-
-    table {
-      font-size: 0.9em;
-    }
-
-    th, td {
-      padding: 8px 5px;
     }
   }
 </style>

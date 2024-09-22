@@ -1,25 +1,53 @@
 <script lang="ts">
+  // Import necessary dependencies
   import { onMount } from 'svelte';
   import Chart from 'chart.js/auto';
-  import { errorAnalysisData, errorClusteredJobs } from '$lib/dummyData';
+  import { 
+    getErrorAnalysisData, 
+    getErrorClusterDetails,
+    type DetailedErrorJob
+  } from '$lib/dummyData';
   import { goto } from '$app/navigation';
 
+  // Define types for time range and tier selections
   type TimeRange = 'today' | 'week' | 'month';
-  type ErrorType = keyof typeof errorAnalysisData['today'];
+  type Tier = 'tier2' | 'tier3';
 
+  // Initialize state variables
   let timeRange: TimeRange = 'week';
+  let tier: Tier = 'tier2';
+  let selectedCluster: string | null = null;
   let errorChart: Chart | null = null;
-  let selectedErrorType: ErrorType | null = null;
+  let selectedErrorType: string | null = null;
+  let detailedErrorJobs: DetailedErrorJob[] = [];
 
-  $: currentErrorAnalysisData = errorAnalysisData[timeRange];
-  $: currentErrorClusteredJobs = errorClusteredJobs[timeRange];
+  // Reactive statement to update error analysis data when tier or timeRange changes
+  $: currentErrorAnalysisData = getErrorAnalysisData(tier, timeRange);
 
+  // Reactive statement to update chart when error analysis data changes
+  $: {
+    if (errorChart) {
+      updateChart();
+    }
+  }
+
+  // Handler for time range change
   function handleTimeRangeChange(range: TimeRange) {
     timeRange = range;
     selectedErrorType = null;
+    detailedErrorJobs = [];
     updateChart();
   }
 
+  // Handler for tier change
+  function handleTierChange(newTier: Tier) {
+    tier = newTier;
+    selectedErrorType = null;
+    detailedErrorJobs = [];
+    updateChart();
+  }
+
+  // Function to update the chart with new data
   function updateChart() {
     if (errorChart) {
       errorChart.data.labels = Object.keys(currentErrorAnalysisData);
@@ -28,10 +56,18 @@
     }
   }
 
+  // Function to handle error type selection
   function selectErrorType(errorType: string) {
-    selectedErrorType = selectedErrorType === errorType ? null : errorType as ErrorType;
+    if (selectedErrorType === errorType) {
+      selectedErrorType = null;
+      detailedErrorJobs = [];
+    } else {
+      selectedErrorType = errorType;
+      detailedErrorJobs = getErrorClusterDetails(tier, timeRange, errorType);
+    }
   }
 
+  // Initialize the chart on component mount
   onMount(() => {
     const ctx = document.getElementById('errorChart') as HTMLCanvasElement;
     errorChart = new Chart(ctx, {
@@ -63,8 +99,14 @@
     });
   });
 
+  // Function to navigate back to the dashboard
   function navigateToDashboard() {
     goto('/');
+  }
+
+  // Function to format date strings
+  function formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleString();
   }
 </script>
 
@@ -78,19 +120,28 @@
     <button class="back-button" on:click={navigateToDashboard}>Back to Dashboard</button>
   </header>
 
-  <div class="time-filter">
-    <button class:active={timeRange === 'today'} on:click={() => handleTimeRangeChange('today')}>Today</button>
-    <button class:active={timeRange === 'week'} on:click={() => handleTimeRangeChange('week')}>Last 7 Days</button>
-    <button class:active={timeRange === 'month'} on:click={() => handleTimeRangeChange('month')}>Last 30 Days</button>
+  <!-- Filter section for tier and time range -->
+  <div class="filters">
+    <div class="tier-filter">
+      <button class:active={tier === 'tier2'} on:click={() => handleTierChange('tier2')}>Tier 2</button>
+      <button class:active={tier === 'tier3'} on:click={() => handleTierChange('tier3')}>Tier 3</button>
+    </div>
+    <div class="time-filter">
+      <button class:active={timeRange === 'today'} on:click={() => handleTimeRangeChange('today')}>Today</button>
+      <button class:active={timeRange === 'week'} on:click={() => handleTimeRangeChange('week')}>Last 7 Days</button>
+      <button class:active={timeRange === 'month'} on:click={() => handleTimeRangeChange('month')}>Last 30 Days</button>
+    </div>
   </div>
 
   <div class="content-wrapper">
     <div class="main-content">
+      <!-- Chart container -->
       <div class="chart-container">
         <canvas id="errorChart"></canvas>
       </div>
 
-      {#if selectedErrorType}
+      <!-- Detailed job information for selected error type -->
+      {#if selectedErrorType && detailedErrorJobs.length > 0}
         <div class="job-details">
           <h2>Jobs with {selectedErrorType} Error</h2>
           <div class="table-container">
@@ -99,17 +150,25 @@
                 <tr>
                   <th>Job ID</th>
                   <th>Job Name</th>
+                  <th>Cluster</th>
                   <th>Start Time</th>
                   <th>Duration</th>
+                  <th>Records Processed</th>
+                  <th>Failed Step</th>
+                  <th>Affected Records</th>
                 </tr>
               </thead>
               <tbody>
-                {#each currentErrorClusteredJobs[selectedErrorType] as job}
+                {#each detailedErrorJobs as job}
                   <tr>
-                    <td data-label="Job ID">{job.id}</td>
-                    <td data-label="Job Name">{job.name}</td>
-                    <td data-label="Start Time">{job.startTime}</td>
-                    <td data-label="Duration">{job.duration}</td>
+                    <td>{job.id}</td>
+                    <td>{job.name}</td>
+                    <td>{job.cluster}</td>
+                    <td>{formatDate(job.startTime)}</td>
+                    <td>{job.duration}</td>
+                    <td>{job.recordsProcessed.toLocaleString()}</td>
+                    <td>{job.errorDetails.failedStep}</td>
+                    <td>{job.errorDetails.affectedRecords.toLocaleString()}</td>
                   </tr>
                 {/each}
               </tbody>
@@ -119,8 +178,9 @@
       {/if}
     </div>
 
+    <!-- Sidebar with error type list -->
     <div class="error-clusters">
-      <h2>Error Clusters</h2>
+      <h2>Error Types</h2>
       <ul role="listbox" aria-label="Error types">
         {#each Object.entries(currentErrorAnalysisData) as [errorType, count]}
           <li>
@@ -128,12 +188,6 @@
               role="option"
               aria-selected={selectedErrorType === errorType}
               on:click={() => selectErrorType(errorType)}
-              on:keydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  selectErrorType(errorType);
-                }
-              }}
             >
               <span class="error-type">{errorType}</span>
               <span class="error-count">{count}</span>
@@ -146,19 +200,22 @@
 </main>
 
 <style>
+  /* Styles for the main container */
   main {
     font-family: Arial, sans-serif;
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    box-sizing: border-box;
   }
 
+  /* Styles for the header */
   header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
     margin-bottom: 20px;
-    flex-wrap: wrap;
   }
 
   h1, h2 {
@@ -166,6 +223,7 @@
     margin: 0.5em 0;
   }
 
+  /* Styles for the back button */
   .back-button {
     padding: 10px 15px;
     background-color: #2196F3;
@@ -176,105 +234,51 @@
     transition: background-color 0.3s ease;
   }
 
-  .back-button:hover {
-    background-color: #1976D2;
+  /* Styles for filter section */
+  .filters {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
   }
 
-  .time-filter {
-    margin-bottom: 20px;
+  .tier-filter, .time-filter {
     display: flex;
-    flex-wrap: wrap;
     gap: 10px;
   }
 
-  .time-filter button {
+  .tier-filter button, .time-filter button {
     padding: 8px 12px;
     background-color: #f0f0f0;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    flex-grow: 1;
   }
 
-  .time-filter button.active {
+  .tier-filter button.active, .time-filter button.active {
     background-color: #4CAF50;
     color: white;
   }
 
+  /* Styles for content layout */
   .content-wrapper {
     display: flex;
-    flex-wrap: wrap;
     gap: 20px;
   }
 
   .main-content {
-    flex: 1 1 600px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    flex: 1;
   }
 
+  /* Styles for chart container */
   .chart-container {
     height: 400px;
-    background-color: white;
-    padding: 20px;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
   }
 
+  /* Styles for job details section */
   .job-details {
-    background-color: white;
-    padding: 20px;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .error-clusters {
-    flex: 1 1 300px;
-    background-color: #f9f9f9;
-    padding: 20px;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .error-clusters ul {
-    list-style-type: none;
-    padding: 0;
-  }
-
-  .error-clusters li {
-    margin-bottom: 0.5rem;
-  }
-
-  .error-clusters button {
-    display: flex;
-    width: 100%;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background: none;
-    border: none;
-    text-align: left;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-
-  .error-clusters button[aria-selected="true"] {
-    background-color: #e3f2fd;
-    font-weight: bold;
-  }
-
-  .error-clusters button:hover, .error-clusters button:focus {
-    background-color: #e9e9e9;
-  }
-
-  .error-type {
-    flex-grow: 1;
-  }
-
-  .error-count {
-    margin-left: 1rem;
+    margin-top: 20px;
   }
 
   .table-container {
@@ -297,49 +301,46 @@
     font-weight: bold;
   }
 
-  tr:last-child td {
-    border-bottom: none;
+  /* Styles for error clusters sidebar */
+  .error-clusters {
+    width: 250px;
   }
 
-  @media (max-width: 600px) {
-    .time-filter {
+  .error-clusters ul {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  .error-clusters button {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .error-clusters button[aria-selected="true"] {
+    background-color: #e3f2fd;
+    font-weight: bold;
+  }
+
+  .error-clusters button:hover {
+    background-color: #f5f5f5;
+  }
+
+  /* Responsive design for smaller screens */
+  @media (max-width: 768px) {
+    .content-wrapper {
       flex-direction: column;
     }
 
-    .time-filter button {
+    .error-clusters {
       width: 100%;
-    }
-
-    table {
-      border: 0;
-    }
-
-    table thead {
-      display: none;
-    }
-
-    table tr {
-      margin-bottom: 10px;
-      display: block;
-      border-bottom: 2px solid #ddd;
-    }
-
-    table td {
-      display: block;
-      text-align: right;
-      padding-left: 50%;
-      position: relative;
-    }
-
-    table td::before {
-      content: attr(data-label);
-      position: absolute;
-      left: 6px;
-      width: 45%;
-      padding-right: 10px;
-      white-space: nowrap;
-      text-align: left;
-      font-weight: bold;
     }
   }
 </style>
