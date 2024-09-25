@@ -17,6 +17,7 @@
   let chartCanvas: HTMLCanvasElement;
   let chart: any = null;
   let showChart = false;
+  
 
   // Function to format date strings
   function formatDate(dateString: string): string {
@@ -72,142 +73,145 @@
       chart.destroy();
     }
 
-    // Prepare data for the chart
+      // Ensure all dates are valid Date objects
     const labels = analysisData.map(d => {
       if ('date' in d) {
+        // For daily data
         return new Date(d.date).toISOString();
       }
+      // For weekly/monthly data
       return d.period;
     });
+
+
     const recordsProcessedData = analysisData.map(d => d.recordsProcessed);
     const throughputData = analysisData.map(d => 'throughput' in d ? d.throughput : d.averageThroughput);
 
     // Chart configuration
     const chartConfig = {
-      type: 'bar' as const,
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Records Processed',
-            data: recordsProcessedData,
-            backgroundColor: 'rgba(75, 192, 192, 0.6)',
-            borderColor: 'rgb(75, 192, 192)',
-            borderWidth: 1,
-            yAxisID: 'y1',
-          },
-          {
-            label: 'Throughput (records/minute)',
-            data: throughputData,
-            borderColor: 'rgb(54, 162, 235)',
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            type: 'line' as const,
-            yAxisID: 'y2',
-          },
-        ],
+    type: 'bar' as const,
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Records Processed',
+          data: recordsProcessedData,
+          backgroundColor: 'rgba(75, 192, 192, 0.6)',
+          borderColor: 'rgb(75, 192, 192)',
+          borderWidth: 1,
+          yAxisID: 'y1',
+        },
+        {
+          label: 'Throughput (records/minute)',
+          data: throughputData,
+          borderColor: 'rgb(54, 162, 235)',
+          backgroundColor: 'rgba(54, 162, 235, 0.6)',
+          type: 'line' as const,
+          yAxisID: 'y2',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index' as const,
+        intersect: false,
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: 'index' as const,
-          intersect: false,
-        },
-        scales: {
-          x: {
-            type: selectedPeriod === 'day' ? 'time' : 'category',
-            time: {
-              unit: selectedPeriod === 'day' ? 'day' : undefined,
-              displayFormats: {
-                day: 'yyyy-MM-dd'
-              }
-            },
-            title: {
-              display: true,
-              text: selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1),
-            },
-          },
-          y1: {
-            type: 'logarithmic' as const,
-            display: true,
-            position: 'left' as const,
-            title: {
-              display: true,
-              text: 'Records Processed (log scale)',
-            },
-            ticks: {
-              callback: function(value) {
-                if (value === 10 || value === 100 || value === 1000 || value === 10000 || value === 100000 || value === 1000000) {
-                  return this.getLabelForValue(value as number);
-                }
-              }
+      scales: {
+        x: {
+          type: selectedPeriod === 'day' ? 'time' : 'category',
+          time: {
+            unit: selectedPeriod === 'day' ? 'day' : undefined,
+            displayFormats: {
+              day: 'yyyy-MM-dd'
             }
           },
-          y2: {
-            type: 'linear' as const,
+          title: {
             display: true,
-            position: 'right' as const,
-            title: {
-              display: true,
-              text: 'Throughput (records/minute)',
-            },
-            grid: {
-              drawOnChartArea: false,
-            },
+            text: selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1),
           },
         },
-        plugins: {
-          tooltip: {
-            mode: 'index' as const,
-            intersect: false,
-            callbacks: {
-              title: function(context) {
-                const label = context[0].label;
-                if (selectedPeriod === 'day') {
-                  return format(new Date(label), 'yyyy-MM-dd');
-                }
-                return label;
-              },
-              label: function(context) {
-                let label = context.dataset.label || '';
-                if (label) {
-                  label += ': ';
-                }
-                if (context.parsed.y !== null) {
-                  label += context.parsed.y.toFixed(2);
-                  if (context.datasetIndex === 1) {
-                    label += ' records/minute';
-                  }
-                }
-                return label;
+        y1: {
+          type: 'logarithmic' as const,
+          display: true,
+          position: 'left' as const,
+          title: {
+            display: true,
+            text: 'Records Processed (log scale)',
+          },
+          ticks: {
+            callback: function(value) {
+              if (value === 10 || value === 100 || value === 1000 || value === 10000 || value === 100000 || value === 1000000) {
+                return this.getLabelForValue(value as number);
               }
             }
-          },
-          legend: {
-            position: 'top' as const,
-          },
-          zoom: {
-            zoom: {
-              wheel: {
-                enabled: true,
-              },
-              pinch: {
-                enabled: true
-              },
-              mode: 'x',
-            },
-            pan: {
-              enabled: true,
-              mode: 'x',
-            },
           }
         },
+        y2: {
+          type: 'linear' as const,
+          display: true,
+          position: 'right' as const,
+          title: {
+            display: true,
+            text: 'Throughput (records/minute)',
+          },
+          grid: {
+            drawOnChartArea: false,
+          },
+        },
       },
-    };
+      plugins: {
+        tooltip: {
+          mode: 'index' as const,
+          intersect: false,
+          callbacks: {
+            title: function(context) {
+              const label = context[0].label;
+              if (selectedPeriod === 'day') {
+                return format(new Date(label), 'yyyy-MM-dd');
+              }
+              return label;
+            },
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.parsed.y !== null) {
+                label += context.parsed.y.toFixed(2);
+                if (context.datasetIndex === 1) {
+                  label += ' records/minute';
+                }
+              }
+              return label;
+            }
+          }
+        },
+        legend: {
+          position: 'top' as const,
+        },
+        zoom: {
+          zoom: {
+            wheel: {
+              enabled: true,
+            },
+            pinch: {
+              enabled: true
+            },
+            mode: 'x',
+          },
+          pan: {
+            enabled: true,
+            mode: 'x',
+          },
+        }
+      },
+    },
+  };
 
-    // Create new chart instance
-    chart = new Chart(chartCanvas, chartConfig);
-  }
+  chart = new Chart(chartCanvas, chartConfig);
+}
 
   // Function to handle "View Analysis" button click
   function viewAnalysis(loadId: string) {
@@ -259,6 +263,7 @@
         <table>
           <!-- Table rows for job details -->
           <tr><th>Job ID:</th><td>{job.id}</td></tr>
+          <tr><th>Yarn App ID:<td>{job.yarnId}</td></tr>
           <tr><th>Description:</th><td>{job.description}</td></tr>
           <tr><th>Tier:</th><td>{job.tier}</td></tr>
           <tr><th>Cluster:</th><td>{job.cluster}</td></tr>

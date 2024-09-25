@@ -108,6 +108,7 @@ interface Job {
     message: string;
   }>;
   jobLoads: JobLoad[];
+  yarnId: string;
 }
 
 // Interface for cluster data
@@ -307,6 +308,17 @@ function generateJobLoad(startTime: Date): JobLoad {
 }
 
 /**
+ * Generates a Yarn ID
+ * @returns A string representing a Yarn ID
+ */
+function generateYarnId(): string {
+  const cluster = Math.random() < 0.5 ? 'default' : 'analytics';
+  const timestamp = Math.floor(Date.now() / 1000);
+  const randomPart = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `application_${timestamp}_${randomPart}_${cluster}`;
+}
+
+/**
  * Generates a complete job
  * @param cluster The cluster the job belongs to
  * @param startTime The start time of the job
@@ -347,6 +359,7 @@ function generateJob(cluster: string, startTime: Date, forceTier?: 'Tier 2' | 'T
     sourceSystem: 'Source Database',
     targetSystem: 'Data Warehouse',
     jobLoads,
+    yarnId: generateYarnId(),
     steps: [
       {
         name: 'Extract',
@@ -637,9 +650,27 @@ export function getJobLoadAnalysis(jobId: string, loadId: string, periodType: 'd
   const relevantLoad = job.jobLoads.find(load => load.loadId === loadId);
   if (!relevantLoad) return [];
 
-  return periodType === 'day' ? relevantLoad.dailyData : aggregateData(relevantLoad.dailyData, periodType);
+  if (periodType === 'day') {
+    return relevantLoad.dailyData.map(d => {
+      const date = d.date instanceof Date ? d.date : new Date(d.date);
+      return {
+        ...d,
+        date: isNaN(date.getTime()) ? new Date() : date, // Use current date if invalid
+        recordsProcessed: Number(d.recordsProcessed) || 0,
+        duration: Number(d.duration) || 0,
+        throughput: Number(d.throughput) || 0
+      };
+    });
+  } else {
+    return aggregateData(relevantLoad.dailyData, periodType).map(d => ({
+      ...d,
+      period: d.period || 'Unknown',
+      recordsProcessed: Number(d.recordsProcessed) || 0,
+      duration: Number(d.duration) || 0,
+      averageThroughput: Number(d.averageThroughput) || 0
+    }));
+  }
 }
-
 /**
  * Retrieves error cluster details for a specific tier, time range, and error type
  * @param tier The tier ('tier1' or 'tier2')
