@@ -109,6 +109,7 @@ interface Job {
   }>;
   jobLoads: JobLoad[];
   yarnId: string;
+  jobRunId :string;
 }
 
 // Interface for cluster data
@@ -318,6 +319,13 @@ function generateYarnId(): string {
   return `application_${timestamp}_${randomPart}_${cluster}`;
 }
 
+function generateJobRunId(): string {
+  const cluster = Math.random() < 0.5 ? 'default' : 'analytics';
+  const timestamp = Math.floor(Date.now() / 1000);
+  const randomPart = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `JobRun_${timestamp}_${randomPart}_${cluster}`;
+}
+
 /**
  * Generates a complete job
  * @param cluster The cluster the job belongs to
@@ -360,6 +368,7 @@ function generateJob(cluster: string, startTime: Date, forceTier?: 'Tier 2' | 'T
     targetSystem: 'Data Warehouse',
     jobLoads,
     yarnId: generateYarnId(),
+    jobRunId :generateJobRunId(),
     steps: [
       {
         name: 'Extract',

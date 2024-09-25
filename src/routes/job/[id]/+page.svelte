@@ -263,6 +263,7 @@
         <table>
           <!-- Table rows for job details -->
           <tr><th>Job ID:</th><td>{job.id}</td></tr>
+          <tr><th>Job Run ID:</th><td>{job.jobRunId}</td></tr>
           <tr><th>Yarn App ID:<td>{job.yarnId}</td></tr>
           <tr><th>Description:</th><td>{job.description}</td></tr>
           <tr><th>Tier:</th><td>{job.tier}</td></tr>
